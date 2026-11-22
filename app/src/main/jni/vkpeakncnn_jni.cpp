@@ -2623,7 +2623,7 @@ JNIEXPORT jboolean JNICALL Java_com_tencent_vkpeakncnn_VkPeakNcnn_ResetVulkan(JN
     }
     if (type == 2)
     {
-        g_vulkan_initialized = ncnn::create_gpu_instance("libmomoten.so") == 0;
+        g_vulkan_initialized = ncnn::create_gpu_instance("libvulkan_panfrost.so") == 0;
     }
 
     // An explicit driver path can silently fall back to the system driver.
