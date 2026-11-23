@@ -47,6 +47,12 @@ static bool is_momoten(const ncnn::GpuInfo& info)
         || strncmp(info.device_name(), "momoten: ", 9) == 0;
 }
 
+static bool is_panvk(const ncnn::GpuInfo& info)
+{
+    return strcmp(info.driver_name(), "panvk") == 0
+        || strncmp(info.device_name(), "panvk: ", 7) == 0;
+}
+
 #define REPEAT_1(...) #__VA_ARGS__
 #define REPEAT_2(...) REPEAT_1(__VA_ARGS__) REPEAT_1(__VA_ARGS__)
 #define REPEAT_4(...) REPEAT_2(__VA_ARGS__) REPEAT_2(__VA_ARGS__)
@@ -2566,6 +2572,27 @@ static bool is_adreno_6xx_7xx_8xx_series()
     return false;
 }
 
+
+static bool is_mali()
+{
+    ncnn::VulkanDevice* vkdev = get_vulkan_device();
+
+    if (vkdev)
+    {
+        // qcom
+        const char* device_name = vkdev->info.device_name();
+        if (!device_name)
+            return false;
+
+        // momoten prefixes the underlying OpenCL device name.
+        const char* mali_name = strstr(device_name, "Mali");
+        if (!adreno_name)
+            return false;
+        return true;
+    }
+
+    return false;
+}
 // public native boolean IsVulkanSupported(int type);
 JNIEXPORT jboolean JNICALL Java_com_tencent_vkpeakncnn_VkPeakNcnn_IsVulkanSupported(JNIEnv *env, jobject thiz, jint type)
 {
@@ -2590,7 +2617,23 @@ JNIEXPORT jboolean JNICALL Java_com_tencent_vkpeakncnn_VkPeakNcnn_IsVulkanSuppor
         return JNI_FALSE;
 #endif
     }
+    if (type == 3)
+    {
+#if __aarch64__
+        // turnip only supports adreno 6xx 7xx 8xx
+        static bool g_inited = false;
+        static bool g_is_mali = false;
+        if (!g_inited)
+        {
+            g_is_mali = is_mali();
+            g_inited = true;
+        }
 
+        return g_is_mali ? JNI_TRUE : JNI_FALSE;
+#else
+        return JNI_FALSE;
+#endif
+    }
     return JNI_FALSE;
 }
 
@@ -2598,6 +2641,8 @@ JNIEXPORT jboolean JNICALL Java_com_tencent_vkpeakncnn_VkPeakNcnn_IsVulkanSuppor
 JNIEXPORT jint JNICALL Java_com_tencent_vkpeakncnn_VkPeakNcnn_GetVulkanType(JNIEnv *env, jobject thiz)
 {
     ncnn::VulkanDevice* vkdev = get_vulkan_device();
+    if (vkdev && is_panvk(vkdev->info))
+        return 3;
     if (vkdev && is_momoten(vkdev->info))
         return 2;
     if (vkdev && vkdev->info.driver_id() == VK_DRIVER_ID_MESA_TURNIP)
@@ -2608,7 +2653,7 @@ JNIEXPORT jint JNICALL Java_com_tencent_vkpeakncnn_VkPeakNcnn_GetVulkanType(JNIE
 // public native boolean ResetVulkan(int type);
 JNIEXPORT jboolean JNICALL Java_com_tencent_vkpeakncnn_VkPeakNcnn_ResetVulkan(JNIEnv *env, jobject thiz, jint type)
 {
-    if (type < 0 || type > 2)
+    if (type < 0 || type > 3)
         return JNI_FALSE;
 
     g_vulkan_initialized = false;
@@ -2623,9 +2668,12 @@ JNIEXPORT jboolean JNICALL Java_com_tencent_vkpeakncnn_VkPeakNcnn_ResetVulkan(JN
     }
     if (type == 2)
     {
+        g_vulkan_initialized = ncnn::create_gpu_instance("libmomoten.so") == 0;
+    }
+    if (type == 3)
+    {
         g_vulkan_initialized = ncnn::create_gpu_instance("libvulkan_panfrost.so") == 0;
     }
-
     // An explicit driver path can silently fall back to the system driver.
     const bool success = get_vulkan_device() && (type == 0 || Java_com_tencent_vkpeakncnn_VkPeakNcnn_GetVulkanType(env, thiz) == type);
     if (type != 0 && !get_vulkan_device())

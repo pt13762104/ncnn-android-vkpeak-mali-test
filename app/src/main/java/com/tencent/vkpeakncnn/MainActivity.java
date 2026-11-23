@@ -32,7 +32,7 @@ public class MainActivity extends Activity
 {
     private VkPeakNcnn vkpeakncnn = new VkPeakNcnn();
 
-    private String[] vulkanItems = {"system driver", "mesa turnip", "momoten"};
+    private String[] vulkanItems = {"system driver", "mesa turnip", "mesa panvk", "momoten"};
 
     private TextView textviewModel;
     private TextView textviewAndroid;
