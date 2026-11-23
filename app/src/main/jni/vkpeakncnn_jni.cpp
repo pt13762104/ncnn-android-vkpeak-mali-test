@@ -2586,7 +2586,7 @@ static bool is_mali()
 
         // momoten prefixes the underlying OpenCL device name.
         const char* mali_name = strstr(device_name, "Mali");
-        if (!adreno_name)
+        if (!mali_name)
             return false;
         return true;
     }
