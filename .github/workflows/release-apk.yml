@@ -36,9 +36,9 @@ jobs:
     
     - name: vulkan-panvk-driver
       run: |
-        wget -q https://github.com/zenithblue-oss/panvk-kbase-android/releases/download/panvk-kbase-v26.3.1/Mesa-PanVK-Android-v26.3.1-795ca7ff.adpkg.zip
+        wget -q https://github.com/MineGraph-bilibili/panvk-Android/releases/download/Mesa.26.3.0-panvk.8/Mesa.26.3.0-panvk.8.zip
         mkdir -p app/src/main/jniLibs/arm64-v8a
-        unzip -q Mesa-PanVK-Android-v26.3.1-795ca7ff.adpkg.zip -d app/src/main/jniLibs/arm64-v8a
+        unzip -q Mesa.26.3.0-panvk.8.zip -d app/src/main/jniLibs/arm64-v8a
 
     - name: build-apk
       run: |
